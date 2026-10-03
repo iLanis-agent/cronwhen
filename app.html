@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CronWhen - when does this cron expression actually run?</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#1c1a10; color:#f3ede6; line-height:1.5; }
+  .wrap { max-width:700px; margin:0 auto; padding:26px 16px 50px; }
+  h1 { font-size:28px; } h1 span { color:#ffd166; }
+  .sub { color:#b5aa9c; margin:6px 0 16px; }
+  .card { background:#2b281a; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+  label { font-size:12px; color:#b5aa9c; display:block; margin-bottom:3px; }
+  input,select { width:100%; background:#1c1a10; color:#f3ede6; border:1px solid #574f48; border-radius:8px; padding:8px; font-size:15px; font-family:inherit; }
+  button { background:#6b5a1e; color:#f3ede6; border:0; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:14px; margin-right:6px; margin-top:10px; }
+  table { width:100%; border-collapse:collapse; } td,th { text-align:left; padding:8px 4px; border-bottom:1px solid #433c36; } th { font-size:12px; color:#b5aa9c; font-weight:600; }
+  td.v { font-size:22px; font-weight:800; color:#ffd166; } tr.me td.v { color:#f3ede6; }
+  .stats { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; } .stats b { display:block; font-size:20px; } .muted { color:#b5aa9c; font-size:13px; }
+  .err { color:#ff9c8a; } .note { font-size:12.5px; color:#8c8174; margin-top:6px; }
+
+  td.v { font-size:17px; } td, th { font-size:14px; } .bar { height:10px; background:#1c1a10; border-radius:6px; overflow:hidden; margin-top:6px; } .bar i { display:block; height:100%; background:#ffd166; } .bar i.over { background:#ff7b72; } .no { color:#ff9c8a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cron<span>When</span></h1>
+  <div class="sub">Paste a cron expression. See it in plain English and the next times it runs.</div>
+  <div class="card">
+    <div class="grid">
+      <div style="grid-column:1/-1"><label>Cron expression (5 fields: minute hour day-of-month month day-of-week, or @daily etc.)</label><input id="expr" value="30 4 1,15 * 5" style="font-family:monospace"></div>
+      <div><label>Count from (UTC, YYYY-MM-DD HH:MM)</label><input id="from" value=""></div>
+      <div><label>How many runs</label><input id="count" value="8"></div>
+    </div>
+    <button id="c1">30 4 1,15 * 5</button><button id="c2">*/15 9-17 * * mon-fri</button><button id="c3">0 0 29 2 *</button><button id="c4">@weekly</button><button id="c5">0 0 31 * *</button>
+  </div>
+  <div class="card" id="out"></div>
+  <div class="note">Rules from the crontab(5) manual page (man7.org). Fields: minute 0-59, hour 0-23, day of month 1-31, month 1-12 or names, day of week 0-7 (0 and 7 are Sunday) or names. Lists (1,15), ranges (1-5), steps (*/15, 0-30/10) and the nicknames @yearly, @annually, @monthly, @weekly, @daily, @hourly are supported. If both day-of-month and day-of-week are restricted (neither contains a *), the job runs when either matches: "30 4 1,15 * 5" runs on the 1st and 15th plus every Friday. Times are computed in UTC; a real cron runs in its server's time zone, and daylight saving shifts can skip or repeat runs, which this does not model. Some cron flavours differ (Quartz has seconds and a year, Kubernetes and GitHub Actions have their own notes, and some add L, W, # or ?): this follows the Vixie-style crontab. Runs in your browser, nothing stored.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var C = window.CronWhen, $ = function (i) { return document.getElementById(i); };
+  var DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function p2(x) { return (x < 10 ? '0' : '') + x; }
+  function fmtUtc(ms) { var d = new Date(ms); return DOW[d.getUTCDay()] + ' ' + d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()) + ' ' + p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()); }
+  function fmtLocal(ms) { var d = new Date(ms); return DOW[d.getDay()] + ' ' + p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
+  function parseFrom(s) { var m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/.exec(s.trim()); if (!m) return null; var t = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]); return isNaN(t) ? null : t; }
+  function render() {
+    var c = C.parse($('expr').value);
+    if (c.error) { $('out').innerHTML = '<div class="err">' + c.error.replace(/</g, '&lt;') + '</div>'; return; }
+    var from = parseFrom($('from').value), k = parseInt($('count').value, 10);
+    if (from === null) { $('out').innerHTML = '<div class="err">Start must look like 2026-10-03 12:00 (UTC).</div>'; return; }
+    if (!(k >= 1 && k <= 50)) { $('out').innerHTML = '<div class="err">Runs: 1 to 50.</div>'; return; }
+    var runs = C.next(c, from, k);
+    var h = '<div style="font-size:17px"><b>' + C.describe(c) + '</b></div>';
+    if (!runs.length) h += '<div class="no" style="margin-top:8px">This never runs in the next 8 years (for example 30 February).</div>';
+    else h += '<table style="margin-top:10px"><tr><th>#</th><th>UTC</th><th>Your time zone</th></tr>' + runs.map(function (t, i) { return '<tr><td>' + (i + 1) + '</td><td class="v">' + fmtUtc(t) + '</td><td>' + fmtLocal(t) + '</td></tr>'; }).join('') + '</table>';
+    $('out').innerHTML = h;
+  }
+  var n = new Date(); $('from').value = n.getUTCFullYear() + '-' + p2(n.getUTCMonth() + 1) + '-' + p2(n.getUTCDate()) + ' ' + p2(n.getUTCHours()) + ':' + p2(n.getUTCMinutes());
+  ['expr', 'from', 'count'].forEach(function (i) { $(i).oninput = render; });
+  ['c1', 'c2', 'c3', 'c4', 'c5'].forEach(function (id) { $(id).onclick = function () { $('expr').value = $(id).textContent; render(); }; });
+  render();
+})();
+</script>
+</body>
+</html>
