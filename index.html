@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CronWhen - when does this cron expression actually run?</title>
+<meta name="description" content="Plain-English meaning and next run times for a cron expression, following the crontab(5) rules.">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#1c1a10; color:#f3ede6; line-height:1.6; }
+  .wrap { max-width:680px; margin:0 auto; padding:48px 20px 60px; }
+  .logo { font-size:46px; font-weight:800; } .logo span { color:#ffd166; }
+  .tag { font-size:19px; margin-top:10px; color:#ded5ca; }
+  .cta { display:inline-block; margin-top:26px; background:#ffd166; color:#1c1a10; font-weight:700; padding:14px 30px; border-radius:12px; text-decoration:none; }
+  h2 { font-size:21px; margin:40px 0 10px; } li { color:#b9aea1; margin-bottom:8px; } ul { margin-left:20px; }
+  .demo { margin-top:26px; background:#2b281a; border-radius:14px; padding:18px; } .demo b { color:#ffd166; }
+  footer { margin-top:50px; font-size:13px; color:#8c8174; } a { color:#ffd166; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Cron<span>When</span></div>
+  <div class="tag">30 4 1,15 * 5 does not mean what most people think.</div>
+  <a class="cta" href="app.html">Open the app</a>
+  <div class="demo"><b>30 4 1,15 * 5</b> runs at 04:30 on the 1st and 15th <b>and</b> every Friday, because when both day fields are set, either one matches.</div>
+  <h2>What it does</h2>
+  <ul><li>Plain-English reading of any 5-field expression or nickname</li><li>The next runs, in UTC and your own time zone</li><li>The day-of-month plus day-of-week OR rule, spelled out</li><li>Clear errors for out-of-range or malformed fields</li></ul>
+  <footer>Follows the Vixie-style crontab(5) rules. Times in UTC. Other cron flavours differ. Static, client-side, nothing stored. <a href="https://github.com/iLanis-agent/cronwhen">Source</a></footer>
+</div>
+</body>
+</html>
